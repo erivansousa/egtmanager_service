@@ -64,9 +64,9 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         if (decodedJWT != null) {
             var userId = decodedJWT.getClaim("uid");
 
-            var optUser = userRepository.findById(userId.asString());
-            if (optUser.isPresent()) {
-                User user = optUser.get();
+            User user = userRepository.findById(userId.asString()).orElse(null);
+
+            if (user != null && token.equals(user.getLastToken().getToken())) {
                 var userAuth = new UserAuth(user.getId(), user.getEmail());
                 var authentication = new UsernamePasswordAuthenticationToken(userAuth,null,
                         userAuth.getRoles());
@@ -77,7 +77,6 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             } else {
                 logger.debug("  * User not found. id:" + userId);
             }
-
         } else {
             logger.debug("  * Any token found");
         }
