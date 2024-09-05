@@ -61,7 +61,7 @@ public class UserManagementController {
     }
 
     private boolean isValidEmail(String email) {
-        if (email == null || email.isEmpty()) {
+        if (email == null || email.isBlank()) {
             return false;
         }
 

@@ -3,7 +3,6 @@ package com.erivan.gtmanager.security;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -34,7 +33,6 @@ public class JWTUtil {
                 .withExpiresAt(calendar.getTime())
                 .withIssuedAt(new Date())
                 .withClaim("typ", "t")
-                .withClaim("nme", username)
                 .withClaim("uid", userId)
                 .withIssuer("egtm")
                 .sign(algorithm);
@@ -56,19 +54,28 @@ public class JWTUtil {
                 .sign(algorithm);
     }
 
-    public boolean validateToken(String token) {
+    public DecodedJWT decodeToken(String token) {
+        //invalid if null or empty
+        if (token == null || token.isBlank()){
+            return null;
+        }
+
         DecodedJWT decodedJWT;
         try {
             Algorithm algorithm = Algorithm.HMAC512(secretKey);
             JWTVerifier verifier = JWT.require(algorithm)
+                    .withClaimPresence("typ")
+                    .withClaimPresence("uid")
                     .withIssuer("egtm")
                     .build();
 
             decodedJWT = verifier.verify(token);
-        } catch (JWTVerificationException exception) {
-            return false;
+        } catch (Exception exception) {
+            //invalid if fail on JWT verification
+            return null;
         }
-        return true;
+
+        return decodedJWT;
     }
 
 }
