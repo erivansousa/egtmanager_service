@@ -17,8 +17,11 @@ public class JWTUtil {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration.token}")
     private Integer expirationTime; //seconds
+
+    @Value("${jwt.expiration.refresh-token}")
+    private Integer refreshExpirationTime; //seconds
 
     public String generateToken(String userId, String username) {
         Algorithm algorithm = Algorithm.HMAC512(secretKey);
@@ -30,7 +33,24 @@ public class JWTUtil {
                 .withSubject(username)
                 .withExpiresAt(calendar.getTime())
                 .withIssuedAt(new Date())
-                .withClaim("name", username)
+                .withClaim("typ", "t")
+                .withClaim("nme", username)
+                .withClaim("uid", userId)
+                .withIssuer("egtm")
+                .sign(algorithm);
+    }
+
+    public String generateRefreshToken(String userId, String username) {
+        Algorithm algorithm = Algorithm.HMAC512(secretKey);
+
+        var calendar = Calendar.getInstance();
+        calendar.add(Calendar.SECOND, refreshExpirationTime);
+
+        return JWT.create()
+                .withSubject(username)
+                .withExpiresAt(calendar.getTime())
+                .withIssuedAt(new Date())
+                .withClaim("typ", "r")
                 .withClaim("uid", userId)
                 .withIssuer("egtm")
                 .sign(algorithm);
@@ -50,4 +70,5 @@ public class JWTUtil {
         }
         return true;
     }
+
 }

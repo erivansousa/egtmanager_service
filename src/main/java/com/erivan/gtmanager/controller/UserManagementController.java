@@ -1,5 +1,9 @@
 package com.erivan.gtmanager.controller;
 
+import com.erivan.gtmanager.dto.TokenPair;
+import com.erivan.gtmanager.dto.UserManagementResult;
+import com.erivan.gtmanager.dto.UserSignIn;
+import com.erivan.gtmanager.dto.UserSignUp;
 import com.erivan.gtmanager.error.UserAccountException;
 import com.erivan.gtmanager.service.UserManagementService;
 import org.apache.logging.log4j.LogManager;
@@ -8,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.regex.Pattern;
 
@@ -24,29 +29,35 @@ public class UserManagementController {
 
     @PostMapping("/signup")
     public ResponseEntity<UserManagementResult> createUser(@RequestBody UserSignUp user) {
-        int statusCode = 201;
-        String message = "created";
 
-        logger.debug("validating new user information");
+        logger.info("validating new user information");
         if (isValidEmail(user.email())) {
             try {
-                logger.debug("start creating new user");
+                logger.info("start creating new user");
                 service.createUser(user);
             } catch (UserAccountException e) {
-                statusCode = 409;
-                message = e.getMessage();
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
             }
         } else {
-            statusCode = 400;
-            message = "invalid email";
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid email");
         }
 
-        return ResponseEntity.status(statusCode).body(new UserManagementResult(message));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UserManagementResult("created"));
     }
 
     @GetMapping("/signin")
-    public ResponseEntity<UserManagementResult> userSignIn(@RequestBody UserSignIn user) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    public ResponseEntity<TokenPair> userSignIn(@RequestBody UserSignIn user) {
+
+        TokenPair pair;
+        try {
+            pair = service.userSignIn(user);
+        } catch (UserAccountException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(pair);
     }
 
     private boolean isValidEmail(String email) {
@@ -58,12 +69,4 @@ public class UserManagementController {
         return pattern.matcher(email).matches();
     }
 
-    public record UserManagementResult(String message) {
-    }
-
-    public record UserSignUp(String name, String email, String password) {
-    }
-
-    public record UserSignIn(String email, String password) {
-    }
 }
