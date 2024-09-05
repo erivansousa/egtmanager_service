@@ -11,7 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ErrorController {
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<UserManagementResult> defaultErrorControler(ResponseStatusException e, HttpServletRequest request){
+    public ResponseEntity<UserManagementResult> defaultErrorController(ResponseStatusException e, HttpServletRequest request){
         return ResponseEntity.status(e.getStatusCode()).body(new UserManagementResult(e.getReason()));
     }
 }

@@ -8,11 +8,15 @@ services:
     depends_on:
       - mongodb
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/egtmanager
+      SPRING_DATA_MONGODB_URI: "mongodb://root:root@mongodb:27017/"
+      SPRING_DATA_MONGODB_DATABASE: "egtmanager"
+    networks:
+      - production-network
 
   mongodb:
     image: mongo:latest
     restart: always
+    container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
@@ -20,6 +24,12 @@ services:
       - "27017:27017"
     volumes:
       - mongodb-data:/data/db
+    networks:
+      - production-network
 
 volumes:
   mongodb-data:
+
+networks:
+  production-network:
+    driver: bridge
