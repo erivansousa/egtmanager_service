@@ -64,7 +64,7 @@ public class UserManagementService {
         }
 
         var repoUser = userRepository.findByEmail(user.email());
-        if ( repoUser == null) {
+        if (repoUser == null) {
             throw new UserAccountException(AccountErrorType.INVALID_CREDENTIALS, "invalid credentials provided");
         }
 
@@ -84,7 +84,17 @@ public class UserManagementService {
         return new TokenPair(token, refreshToken);
     }
 
+    public void userLogOut(String userId) {
+        var optUser = userRepository.findById(userId);
+        if (optUser.isPresent()) {
+            var user = optUser.get();
+            user.getLastToken().setValid(false);
+            userRepository.save(user);
+        }
+    }
+
     private boolean isNullOrEmpty(String str) {
         return str == null || str.isBlank();
     }
+
 }

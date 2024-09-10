@@ -5,19 +5,22 @@ import com.erivan.gtmanager.dto.UserManagementResult;
 import com.erivan.gtmanager.dto.UserSignIn;
 import com.erivan.gtmanager.dto.UserSignUp;
 import com.erivan.gtmanager.error.UserAccountException;
+import com.erivan.gtmanager.security.UserAuth;
 import com.erivan.gtmanager.service.UserManagementService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.regex.Pattern;
 
 @RestController
-@RequestMapping("/account")
+@RequestMapping("/api/auth")
 public class UserManagementController {
     private final Logger logger = LogManager.getLogger();
 
@@ -45,7 +48,7 @@ public class UserManagementController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new UserManagementResult("created"));
     }
 
-    @GetMapping("/signin")
+    @PostMapping("/login")
     public ResponseEntity<TokenPair> userSignIn(@RequestBody UserSignIn user) {
 
         TokenPair pair;
@@ -58,6 +61,22 @@ public class UserManagementController {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(pair);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> userLogOut() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserAuth authUser = (UserAuth) authentication.getPrincipal();
+
+        this.service.userLogOut(authUser.id());
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<String> refreshToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return ResponseEntity.status(HttpStatus.OK).body("");
     }
 
     private boolean isValidEmail(String email) {

@@ -6,31 +6,42 @@ import com.erivan.gtmanager.dto.UserSignIn;
 import com.erivan.gtmanager.dto.UserSignUp;
 import com.erivan.gtmanager.error.UserAccountException;
 import com.erivan.gtmanager.error.UserAccountException.AccountErrorType;
+import com.erivan.gtmanager.security.UserAuth;
 import com.erivan.gtmanager.service.UserManagementService;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class UserManagementControllerTest {
 
     public UserManagementController userManagementController;
     public UserManagementService userManagementService;
 
+    private SecurityContext context;
+
     @BeforeEach
     void setUp() {
+        context = SecurityContextHolder.createEmptyContext();
+        SecurityContextHolder.setContext(context);
+
         userManagementService = mock(UserManagementService.class);
         userManagementController = new UserManagementController(userManagementService);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        SecurityContextHolder.clearContext();
+        context = null;
     }
 
     @Test
@@ -60,7 +71,7 @@ public class UserManagementControllerTest {
         userManagementController.createUser(user);
 
         try {
-            Mockito.verify(userManagementService).createUser(user);
+            verify(userManagementService).createUser(user);
         } catch (UserAccountException e) {
             Assertions.assertNull(e);
         }
@@ -73,7 +84,7 @@ public class UserManagementControllerTest {
 
         userManagementController.userSignIn(user);
 
-        Mockito.verify(userManagementService).userSignIn(user);
+        verify(userManagementService).userSignIn(user);
     }
 
     @Test
@@ -109,6 +120,22 @@ public class UserManagementControllerTest {
         Mockito.when(userManagementService.userSignIn(any(UserSignIn.class))).thenThrow(new UserAccountException(AccountErrorType.INVALID_CREDENTIALS, ""));
 
         Assertions.assertThrows(ResponseStatusException.class, () -> userManagementController.userSignIn(user));
+    }
+
+    @Test
+    @DisplayName("when receive a logout request, should call the service")
+    void logoutRequestShouldCallService() {
+
+        Authentication authentication = mock(Authentication.class);
+        context.setAuthentication(authentication);
+
+        // Stub mocks
+        when(authentication.getPrincipal()).thenReturn(new UserAuth("12334", "blabla", "t"));
+        when(userManagementService.userSignIn(any(UserSignIn.class))).thenThrow(new UserAccountException(AccountErrorType.INVALID_CREDENTIALS, ""));
+
+        userManagementController.userLogOut();
+
+        verify(userManagementService).userLogOut("12334");
     }
 
 }

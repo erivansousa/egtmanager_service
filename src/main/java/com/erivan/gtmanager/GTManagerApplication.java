@@ -9,5 +9,4 @@ public class GTManagerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(GTManagerApplication.class, args);
 	}
-
 }
