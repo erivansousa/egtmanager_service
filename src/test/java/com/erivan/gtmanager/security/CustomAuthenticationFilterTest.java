@@ -8,11 +8,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -22,7 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-
+@ExtendWith(MockitoExtension.class)
 class CustomAuthenticationFilterTest {
 
     @Mock
@@ -30,9 +33,6 @@ class CustomAuthenticationFilterTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @InjectMocks
-    private CustomAuthenticationFilter customAuthenticationFilter;
 
     @Mock
     private HttpServletRequest request;
@@ -43,24 +43,40 @@ class CustomAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @InjectMocks
+    private CustomAuthenticationFilter customAuthenticationFilter;
+
+    private SecurityContext context;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        context = SecurityContextHolder.createEmptyContext();
+        SecurityContextHolder.setContext(context);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        SecurityContextHolder.clearContext();
+        context = null;
     }
 
     @Test
-    void testDoFilterInternal_ValidToken() throws ServletException, IOException {
+    void whenDoInternalFilterWithValidTokenShouldProcessAndCallFilterChain() throws ServletException, IOException {
         // Arrange
         String token = "Bearer valid-token";
         String userId = "user-id";
         String userEmail = "user@example.com";
         DecodedJWT decodedTokenMock = mock(DecodedJWT.class);
         Claim uIdClaim = mock(Claim.class);
+        Claim typClaim = mock(Claim.class);
 
         when(request.getHeader("Authorization")).thenReturn(token);
         when(jwtUtil.decodeToken(token.substring(7))).thenReturn(decodedTokenMock);
         when(uIdClaim.asString()).thenReturn(userId);
+        when(typClaim.asString()).thenReturn("t");
         when(decodedTokenMock.getClaim("uid")).thenReturn(uIdClaim);
+        when(decodedTokenMock.getClaim("typ")).thenReturn(typClaim);
         User user = new User();
         user.setId(userId);
         user.setEmail(userEmail);
@@ -75,7 +91,7 @@ class CustomAuthenticationFilterTest {
     }
 
     @Test
-    void testDoFilterInternal_InvalidToken() throws ServletException, IOException {
+    void whenDoInternalFilterWithInvalidTokenShouldNotProcessAuthenticationAndCallFilterChain() throws ServletException, IOException {
         // Arrange
         String token = "Bearer invalid-token";
 
@@ -92,7 +108,7 @@ class CustomAuthenticationFilterTest {
     }
 
     @Test
-    void testDoFilterInternal_NoToken() throws ServletException, IOException {
+    void whenDoInternalFilterWithoutTokenShouldNotProcessAuthenticationAndCallFilterChain() throws ServletException, IOException {
         // Arrange
         when(request.getHeader("Authorization")).thenReturn(null);
 
