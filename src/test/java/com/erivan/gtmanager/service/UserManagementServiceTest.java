@@ -11,12 +11,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class UserManagementServiceTest {
 
@@ -40,7 +44,7 @@ class UserManagementServiceTest {
 
         Assertions.assertDoesNotThrow(() -> service.createUser(user));
 
-        Mockito.verify(userRepo).save(any());
+        verify(userRepo).save(any());
     }
 
     @Test
@@ -52,7 +56,7 @@ class UserManagementServiceTest {
 
         Assertions.assertDoesNotThrow(() -> service.createUser(user));
 
-        Mockito.verify(userRepo).findByEmail(eq(user.email()));
+        verify(userRepo).findByEmail(eq(user.email()));
     }
 
     @Test
@@ -64,7 +68,7 @@ class UserManagementServiceTest {
 
         Assertions.assertThrows(UserAccountException.class, () -> service.createUser(user));
 
-        Mockito.verify(userRepo).findByEmail(eq(user.email()));
+        verify(userRepo).findByEmail(eq(user.email()));
     }
 
     @Test
@@ -74,7 +78,7 @@ class UserManagementServiceTest {
 
         Assertions.assertDoesNotThrow(() -> service.createUser(user));
 
-        Mockito.verify(cryptoUtil).encrypt(eq(user.password()));
+        verify(cryptoUtil).encrypt(eq(user.password()));
     }
 
     @Test
@@ -126,7 +130,7 @@ class UserManagementServiceTest {
 
         service.userSignIn(userCredential);
 
-        Mockito.verify(userRepo).findByEmail("blablabla@email.com");
+        verify(userRepo).findByEmail("blablabla@email.com");
     }
 
     @Test
@@ -153,7 +157,7 @@ class UserManagementServiceTest {
 
         service.userSignIn(userCredential);
 
-        Mockito.verify(cryptoUtil).encrypt(userCredential.password());
+        verify(cryptoUtil).encrypt(userCredential.password());
     }
 
     @Test
@@ -186,7 +190,7 @@ class UserManagementServiceTest {
 
         service.userSignIn(userCredential);
 
-        Mockito.verify(jwtUtil).generateToken(dbuser.getId(),dbuser.getName());
+        verify(jwtUtil).generateToken(dbuser.getId(), dbuser.getName());
     }
 
     @Test
@@ -205,7 +209,7 @@ class UserManagementServiceTest {
 
         service.userSignIn(userCredential);
 
-        Mockito.verify(jwtUtil).generateRefreshToken(dbuser.getId(),dbuser.getName());
+        verify(jwtUtil).generateRefreshToken(dbuser.getId(), dbuser.getName());
     }
 
     @Test
@@ -244,6 +248,51 @@ class UserManagementServiceTest {
 
         service.userSignIn(userCredential);
 
-        Mockito.verify(userRepo).save(any(User.class));
+        verify(userRepo).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("when logout, should retrieve user from database")
+    void whenLogoutShouldRetrieveUserByIdFromDatabase() {
+
+        when(userRepo.findById(any(String.class))).thenReturn(Optional.empty());
+
+        service.userLogOut("");
+
+        verify(userRepo).findById(any(String.class));
+    }
+
+    @Test
+    @DisplayName("when logout, couldn't find the user, should finish and don't call database save")
+    void whenLogoutDoNotFindUserShouldNotUpdateDatabase() {
+
+        when(userRepo.findById(any(String.class))).thenReturn(Optional.empty());
+
+        service.userLogOut("");
+
+        verify(userRepo, times(0)).save(any());
+    }
+
+    @Test
+    @DisplayName("when logout, could find the user, should update the last token to invalid")
+    void whenLogoutFindUserShouldInvalidateAndUpdateUserToken() {
+
+        var user = new User(
+                "123",
+                "fulano",
+                "email",
+                "",
+                LocalDateTime.now()
+        );
+        user.setLastToken(new User.AccessToken("token", "refresh"));
+        ArgumentCaptor<User> argument = ArgumentCaptor.forClass(User.class);
+
+        when(userRepo.findById(eq("123"))).thenReturn(Optional.of(user));
+
+        service.userLogOut("123");
+
+        verify(userRepo, times(1)).save(argument.capture());
+        var updatedUser = argument.getValue();
+        assertFalse(updatedUser.getLastToken().isValid());
     }
 }
