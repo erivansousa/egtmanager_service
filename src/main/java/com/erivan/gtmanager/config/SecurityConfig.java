@@ -30,15 +30,11 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorization) -> authorization
-                        //.dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/account/signup").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/account/signin").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
                         .anyRequest().authenticated()
-                ).httpBasic(withDefaults());
-
-
-        //add custom authentication filter to check the token on every request
-        http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+                )
+                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
+                .httpBasic(withDefaults());
 
         return http.build();
     }

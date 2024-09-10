@@ -62,13 +62,15 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         var decodedJWT = jwtUtil.decodeToken(token);
         if (decodedJWT != null) {
-            var userId = decodedJWT.getClaim("uid");
+            var userId = decodedJWT.getClaim("uid").asString();
+            var tokenType = decodedJWT.getClaim("typ").asString();
 
-            User user = userRepository.findById(userId.asString()).orElse(null);
+            User user = userRepository.findById(userId).orElse(null);
 
-            if (user != null && token.equals(user.getLastToken().getToken())) {
-                var userAuth = new UserAuth(user.getId(), user.getEmail());
-                var authentication = new UsernamePasswordAuthenticationToken(userAuth,null,
+            if (user != null && user.getLastToken() != null && user.getLastToken().isValid()
+                    && token.equals(user.getLastToken().getToken()) || token.equals(user.getLastToken().getRefreshToken())) {
+                var userAuth = new UserAuth(user.getId(), user.getEmail(),tokenType);
+                var authentication = new UsernamePasswordAuthenticationToken(userAuth,token,
                         userAuth.getRoles());
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -80,7 +82,6 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         } else {
             logger.debug("  * Any token found");
         }
-
         filterChain.doFilter(request, response);
     }
 
