@@ -27,8 +27,7 @@ public class TaskController {
     // Create a new task
     @PostMapping
     public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO task) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserAuth authUser = (UserAuth) authentication.getPrincipal();
+        var authUser = getAuthenticatedUser();
 
         task = taskService.createTask(authUser.id(), task);
         return new ResponseEntity<>(task, HttpStatus.CREATED);
@@ -37,44 +36,41 @@ public class TaskController {
     // Get all tasks for the authenticated user
     @GetMapping
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserAuth authUser = (UserAuth) authentication.getPrincipal();
+        var authUser = getAuthenticatedUser();
         List<TaskDTO> tasks = taskService.getAllTasksFromUserId(authUser.id());
         return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TaskDTO> getTaskById(@PathVariable String id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserAuth authUser = (UserAuth) authentication.getPrincipal();
+    @GetMapping("/{taskId}")
+    public ResponseEntity<TaskDTO> getTaskById(@PathVariable String taskId) {
+        var authUser = getAuthenticatedUser();
 
-        TaskDTO task = taskService.getTaskById(authUser.id(), id);
-        if (task != null) {
-            return new ResponseEntity<>(task, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        var task = taskService.getTaskById(authUser.id(), taskId);
+        return ResponseEntity.ok(task);        
     }
 
     // Update a specific task by ID
-    @PutMapping("/{id}")
-    public ResponseEntity<TaskDTO> updateTask(@PathVariable String id, @RequestBody TaskDTO task) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserAuth authUser = (UserAuth) authentication.getPrincipal();
+    @PutMapping("/{taskId}")
+    public ResponseEntity<TaskDTO> updateTask(@PathVariable String taskId, @RequestBody TaskDTO task) {
+        var authUser = getAuthenticatedUser();
 
-        try {
-            TaskDTO updatedTask = taskService.updateTask(authUser.id(), id, task);
-            return ResponseEntity.ok(updatedTask);
-        } catch (TaskNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        var updatedTask = taskService.updateTask(authUser.id(), taskId, task);
+        return ResponseEntity.ok(updatedTask); 
     }
-/*
+
     // Delete a specific task by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable String id) {
-        taskService.deleteTask(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }*/
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<Void> deleteTask(@PathVariable String taskId) {
+        var authUser = getAuthenticatedUser();
+
+        taskService.deleteTask(authUser.id(), taskId);
+        return ResponseEntity.ok().build();
+    }
+
+    private UserAuth getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (UserAuth) authentication.getPrincipal();
+    }
+    
 }
 

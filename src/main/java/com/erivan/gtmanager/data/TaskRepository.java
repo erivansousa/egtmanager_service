@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface TaskRepository extends MongoRepository<Task, String> {
     List<Task> findAllByUserId(String userId);
+
     Optional<Task> findByIdAndUserId(String id, String userId);
-    boolean existsByIdAndUserId(String id, String userId);
+
+    void deleteByIdAndUserId(String taskId, String userId);
 }

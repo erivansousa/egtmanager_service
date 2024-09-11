@@ -52,7 +52,7 @@ public class TaskService {
 
     public TaskDTO getTaskById(String userId, String taskId) {
         var result = taskRepository.findByIdAndUserId(taskId, userId);
-        return result.map(TaskDTO::fromTask).orElse(null);
+        return result.map(TaskDTO::fromTask).orElseThrow(TaskNotFoundException::new);
     }
 
     public TaskDTO updateTask(String userId, String taskId, TaskDTO task) {
@@ -74,5 +74,9 @@ public class TaskService {
         taskRepository.save(newTask);
 
         return TaskDTO.fromTask(newTask);
+    }
+
+    public void deleteTask(String userId, String taskId) {
+        taskRepository.deleteByIdAndUserId(taskId, userId);
     }
 }
