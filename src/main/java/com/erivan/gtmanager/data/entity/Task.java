@@ -4,11 +4,14 @@ import com.erivan.gtmanager.data.TaskStatus;
 import org.bson.BsonType;
 import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.codecs.pojo.annotations.BsonRepresentation;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Document(collection = "tasks")
+@CompoundIndex(name = "task_id_userid_index", def = "{'id': 1, 'userId': 1}")
 public class Task {
 
     @BsonId()
@@ -17,6 +20,7 @@ public class Task {
     private String title;
     private String description;
     @BsonRepresentation(BsonType.OBJECT_ID)
+    @Indexed
     private String userId;
     private LocalDateTime createdAt;
     private LocalDateTime dueDate;
