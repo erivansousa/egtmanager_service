@@ -15,11 +15,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @Component
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
@@ -68,7 +65,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             User user = userRepository.findById(userId).orElse(null);
 
             if (user != null && user.getLastToken() != null && user.getLastToken().isValid()
-                    && token.equals(user.getLastToken().getToken()) || token.equals(user.getLastToken().getRefreshToken())) {
+                    && (token.equals(user.getLastToken().getToken()) || token.equals(user.getLastToken().getRefreshToken()))) {
                 var userAuth = new UserAuth(user.getId(), user.getEmail(),tokenType);
                 var authentication = new UsernamePasswordAuthenticationToken(userAuth,token,
                         userAuth.getRoles());
